@@ -1,0 +1,44 @@
+name: Build APK from ZIP
+
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Unzip project
+        run: |
+          mkdir -p extracted
+          unzip -q project.zip -d extracted
+          ls -la extracted
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK components
+        run: |
+          sdkmanager --install "platform-tools" "build-tools;34.0.0" "platforms;android-34"
+
+      - name: Build release APK
+        uses: gradle/gradle-build-action@v3
+        with:
+          gradle-version: 8.7
+          build-root-directory: extracted
+          arguments: :app:assembleRelease
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: CarMode-release-apk
+          path: extracted/app/build/outputs/apk/release/*.apk
